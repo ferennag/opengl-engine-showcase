@@ -20,25 +20,31 @@ ShaderManager::ShaderManager() {
 
 
 void ShaderManager::compileShader(QOpenGLShader::ShaderType type, string_view path) {
-    if (!m_shaderCache.contains(path.data())) {
-        qDebug() << "Shader is not in the cache yet: " << path.data() << ". Compiling...";
-        auto shader = make_unique<QOpenGLShader>(type);
-        if (!shader->compileSourceFile(path.data())) {
-            throw ShaderCompilationException(path, shader->log().toStdString());
-        }
-
-        m_shaderCache[path.data()] = {
-                .path = path.data(),
-                .shader = move(shader),
-                .type = type
-        };
-
-        m_fsWatcher.addPath(path.data());
+    if (m_shaderCache.contains(path.data())) {
+        return;
     }
+
+    qDebug() << "Shader is not in the cache yet: " << path.data() << ". Compiling...";
+    auto shader = make_unique<QOpenGLShader>(type);
+    if (!shader->compileSourceFile(path.data())) {
+        throw ShaderCompilationException(path, shader->log().toStdString());
+    }
+
+    m_shaderCache[path.data()] = {
+            .path = path.data(),
+            .shader = move(shader),
+            .type = type
+    };
+
+    m_fsWatcher.addPath(path.data());
 }
 
 QOpenGLShaderProgram &
 ShaderManager::load(string_view name, string_view vertexPath, string_view fragmentPath) {
+    if (m_shaderProgramCache.contains(name.data())) {
+        return *m_shaderProgramCache[name.data()];
+    }
+
     compileShader(QOpenGLShader::Vertex, vertexPath);
     compileShader(QOpenGLShader::Fragment, fragmentPath);
 
@@ -49,7 +55,7 @@ ShaderManager::load(string_view name, string_view vertexPath, string_view fragme
         throw ShaderProgramCompilationException(shader->log().toStdString());
     }
 
-    m_shaderProgramCache[name.data()] = move(shader);
+    m_shaderProgramCache[name.data()] = std::move(shader);
     m_shaderReference.insert({vertexPath.data(), name.data()});
     m_shaderReference.insert({fragmentPath.data(), name.data()});
 
@@ -78,11 +84,13 @@ void ShaderManager::shaderChanged(const QString &path) {
     auto begin = m_shaderReference.lower_bound(path.toStdString());
     auto end = m_shaderReference.upper_bound(path.toStdString());
 
+    // Iterate the name of all the shader programs that include the old version of this shader, and replace it with the new one
     for (auto &it{begin}; it != end; ++it) {
         qDebug() << "Updating shader program: " << it->second.data();
         auto &shader = *m_shaderProgramCache[it->second];
         auto existingShaders = shader.shaders();
 
+        // Find the old shader
         auto result = find_if(existingShaders.begin(), existingShaders.end(), [&existingShader](QOpenGLShader *s) {
             return s->shaderType().testFlags(existingShader.type);
         });
@@ -92,6 +100,7 @@ void ShaderManager::shaderChanged(const QString &path) {
             continue;
         }
 
+        // Replace the old shader with the new one, and re-link the program
         shader.removeShader(*result);
         shader.addShader(newShader.get());
         shader.link();
@@ -99,7 +108,7 @@ void ShaderManager::shaderChanged(const QString &path) {
     }
 
     existingShader.shader.reset();
-    existingShader.shader = move(newShader);
+    existingShader.shader = std::move(newShader);
 }
 
 

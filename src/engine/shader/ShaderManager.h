@@ -17,6 +17,9 @@ struct Shader {
     QOpenGLShader::ShaderType type;
 };
 
+/**
+ * An advanced singleton Shader Manager class that can hot-load shaders when those change on the filesystem.
+ */
 class ShaderManager: public QObject {
     Q_OBJECT
 public:
@@ -33,9 +36,22 @@ public:
 public slots:
     void shaderChanged(const QString &path);
 private:
+    /**
+     * Unique singleton instance of this class.
+     */
     static unique_ptr<ShaderManager> s_instance;
+
     map<string, unique_ptr<QOpenGLShaderProgram>> m_shaderProgramCache;
+
+    /**
+     * Each shader is cached in this map, and reused between shader programs.
+     */
     map<string, Shader> m_shaderCache;
+
+    /**
+     * Stores a reference from shader path -> shader program names.
+     * This way when a shader changes, we can update all the shader programs using that shader.
+     */
     multimap<string, string> m_shaderReference;
     QFileSystemWatcher m_fsWatcher;
 

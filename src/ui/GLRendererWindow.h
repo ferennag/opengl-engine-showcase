@@ -7,6 +7,7 @@
 #include <QCloseEvent>
 #include <QElapsedTimer>
 #include "../engine/World.h"
+#include "../debug/DebugWindow.h"
 
 class GLRendererWindow: public QOpenGLWindow {
     Q_OBJECT
@@ -17,8 +18,9 @@ signals:
     void requestClose();
 protected:
     std::unique_ptr<World> m_world;
+    std::unique_ptr<DebugWindow> m_debugWindow;
     QElapsedTimer m_timer;
-    double m_lastFrame { 0 };
+    long long m_lastFrame { 0 };
 
     void initializeGL() override;
     void resizeGL(int w, int h) override;

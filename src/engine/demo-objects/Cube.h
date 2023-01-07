@@ -9,19 +9,19 @@
 class Cube : public DemoObject {
 public:
     explicit Cube(std::string_view textureName, std::string_view specularTextureName);
+    ~Cube() override = default;
 
-    virtual ~Cube() = default;
-    QMatrix4x4 getModelMatrix() const override;
-    Material getMaterial() const;
+    [[nodiscard]] QMatrix4x4 getModelMatrix() const override;
+    [[nodiscard]] Material getMaterial() const;
     void render() override;
     void cleanup() override;
-
 private:
     std::string m_textureName, m_specularTextureName;
     Material m_material;
     unsigned int vao, vbo;
 
     static constexpr float vertices[] = {
+            // Vertex position - Texture coordinates - Vertex Normals
             -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f,
             0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
             0.5f, 0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,

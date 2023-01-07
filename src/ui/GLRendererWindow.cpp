@@ -22,6 +22,7 @@ void GLRendererWindow::initializeGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_world = std::make_unique<World>(ProjectionType::PERSPECTIVE, QWindow::size());
     m_timer.start();
+    m_debugWindow = std::make_unique<DebugWindow>(this);
 }
 
 void GLRendererWindow::resizeGL(int w, int h) {
@@ -32,11 +33,13 @@ void GLRendererWindow::resizeGL(int w, int h) {
 
 void GLRendererWindow::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    double elapsed = m_timer.elapsed();
+    long long elapsed = m_timer.elapsed();
     double delta = (elapsed - m_lastFrame) / 1000.0f;
     m_lastFrame = elapsed;
     m_world->update(delta);
     m_world->render(delta);
+
+    m_debugWindow->render(delta);
     update();
 }
 
@@ -45,6 +48,10 @@ void GLRendererWindow::keyPressEvent(QKeyEvent *event) {
 
     if (event->key() == Qt::Key_Escape) {
         emit requestClose();
+    }
+
+    if (event->key() == Qt::Key_F1) {
+        m_debugWindow->setEnabled(!m_debugWindow->isEnabled());
     }
 }
 

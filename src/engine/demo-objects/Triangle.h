@@ -7,19 +7,13 @@
 class Triangle : public DemoObject {
 public:
     Triangle();
-
-    virtual ~Triangle() = default;
-
+    ~Triangle() override = default;
     Triangle(const Triangle &other) = delete;
-
     Triangle &operator=(const Triangle &other) = delete;
 
-    QMatrix4x4 getModelMatrix() const override;
-
+    [[nodiscard]] QMatrix4x4 getModelMatrix() const override;
     void render() override;
-
     void cleanup() override;
-
 protected:
     unsigned int vao, vbo;
     static constexpr float vertices[] = {
